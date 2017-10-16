@@ -1,0 +1,72 @@
+service: favi
+
+provider:
+  name: aws
+  runtime: nodejs4.3
+  profile: tremorlab
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:GetRecords
+        - dynamodb:GetShardIterator
+        - dynamodb:DescribeStream
+        - dynamodb:ListStreams
+      Resource: arn:aws:dynamodb:*:*
+
+package:
+  exclude:
+    - seed.rb
+    - '*.csv*'
+    - ruby
+    - vendor
+    - .bundle 
+    - '*.rb'
+
+functions:
+  createFave:
+    handler: handler.createFave
+    environment:
+    events:
+      - http:
+          path: /faves
+          method: post
+  streamFunction:
+    handler: handler.faveStreamEvent
+    events:
+       - stream:
+          type: dynamodb
+          arn:
+            Fn::GetAtt:
+              - FavesDynamoDbTable
+              - StreamArn
+          batchSize: 1
+
+
+resources:
+  Resources:
+    FavesDynamoDbTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: FaveRecords
+        # Note: AttributeDefinitions should only contain attributes used in indexes/keys
+        AttributeDefinitions:
+          - AttributeName: hostname
+            AttributeType: "S"
+        KeySchema:
+          - AttributeName: hostname
+            KeyType: HASH
+        StreamSpecification:
+            StreamViewType: NEW_AND_OLD_IMAGES
+        ProvisionedThroughput:
+          ReadCapacityUnits: 25
+          WriteCapacityUnits: 25
+
+plugins:
+  - serverless-plugin-bespoken

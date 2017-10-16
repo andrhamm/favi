@@ -1,0 +1,14 @@
+{
+  "name": "favi",
+  "version": "0.0.1",
+  "description": "Serverless favicon scraping service",
+  "author": "Andrew Hammond",
+  "license": "MIT",
+  "devDependencies": {
+    "serverless": "^1.23.0",
+    "serverless-plugin-bespoken": "^0.0.6"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.133.0"
+  }
+}
