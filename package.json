@@ -5,7 +5,8 @@
   "author": "Andrew Hammond",
   "license": "MIT",
   "devDependencies": {
-    "serverless": "^1.23.0"
+    "serverless": "^1.23.0",
+    "serverless-plugin-custom-domain": "^2.0.0"
   },
   "dependencies": {
     "aws-sdk": "^2.133.0",

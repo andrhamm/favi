@@ -14,6 +14,12 @@
   version "0.10.2"
   resolved "https://registry.yarnpkg.com/@types/graphql/-/graphql-0.10.2.tgz#d7c79acbaa17453b6681c80c34b38fcb10c4c08c"
 
+add-custom-resource@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/add-custom-resource/-/add-custom-resource-1.0.1.tgz#800ec673c7fa8e3a9b1023bfe057ae0c2386c178"
+  dependencies:
+    escape-json-node "^1.0.8"
+
 agent-base@2:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/agent-base/-/agent-base-2.1.1.tgz#d6de10d5af6132d5bd692427d46fc538539094c7"
@@ -520,6 +526,10 @@ end-of-stream@^1.0.0:
 es6-promise@~4.0.3:
   version "4.0.5"
   resolved "https://registry.yarnpkg.com/es6-promise/-/es6-promise-4.0.5.tgz#7882f30adde5b240ccfa7f7d78c548330951ae42"
+
+escape-json-node@^1.0.8:
+  version "1.0.8"
+  resolved "https://registry.yarnpkg.com/escape-json-node/-/escape-json-node-1.0.8.tgz#db56cb150865ef4695dc07369820a50836671b6a"
 
 escape-string-regexp@^1.0.2, escape-string-regexp@^1.0.5:
   version "1.0.5"
@@ -1437,13 +1447,20 @@ semver-regex@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/semver-regex/-/semver-regex-1.0.0.tgz#92a4969065f9c70c694753d55248fc68f8f652c9"
 
-semver@^5.0.3:
+semver@5.4.1, semver@^5.0.3:
   version "5.4.1"
   resolved "https://registry.yarnpkg.com/semver/-/semver-5.4.1.tgz#e059c09d8571f0540823733433505d3a2f00b18e"
 
 semver@~5.0.1:
   version "5.0.3"
   resolved "https://registry.yarnpkg.com/semver/-/semver-5.0.3.tgz#77466de589cd5d3c95f138aa78bc569a3cb5d27a"
+
+serverless-plugin-custom-domain@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/serverless-plugin-custom-domain/-/serverless-plugin-custom-domain-2.0.0.tgz#152cc2f1145de8350a603c5b1a837363b5c04b44"
+  dependencies:
+    add-custom-resource "^1.0.1"
+    semver "5.4.1"
 
 serverless@^1.23.0:
   version "1.23.0"

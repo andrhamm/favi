@@ -32,6 +32,12 @@ provider:
         - s3:CreateBucket
       Resource: arn:aws:s3:::favi-cache:*:*"
 
+plugins:
+  - serverless-plugin-custom-domain
+
+custom:
+  domain: "favi-api.andrhamm.com"
+
 package:
   exclude:
     - seed.rb
