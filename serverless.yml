@@ -30,7 +30,9 @@ provider:
         - s3:ListBucket
         - s3:ListObjects
         - s3:CreateBucket
-      Resource: arn:aws:s3:::favi-cache:*:*"
+        - s3:GetObjectAcl
+        - s3:PutObjectAcl
+      Resource: arn:aws:s3:::favi-*:*:*"
 
 plugins:
   - serverless-plugin-custom-domain
@@ -40,6 +42,7 @@ custom:
 
 package:
   exclude:
+    - app
     - seed.rb
     - '*.csv*'
     - ruby
