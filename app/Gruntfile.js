@@ -4,8 +4,8 @@ module.exports = function (grunt) {
     aws_s3: {
       options: {
         awsProfile: 'tremorlab',
-        accessKeyId: '<%= process.env.AWS_ACCESS_KEY_ID %>', // Use the variables
-        secretAccessKey: '<%= process.env.AWS_SECRET_ACCESS_KEY %>', // You can also use env variables
+        // accessKeyId: '<%= aws.accessKeyId %>',
+        // secretAccessKey: '<%= aws.secretAccessKey %>',
         region: 'us-east-1',
         uploadConcurrency: 5, // 5 simultaneous uploads
         downloadConcurrency: 5, // 5 simultaneous downloads
@@ -17,7 +17,7 @@ module.exports = function (grunt) {
           gzipRename: 'ext', // when uploading a gz file, keep the original extension
         },
         files: [
-            {expand: true, cwd: '/', src: ['src'], dest: '/'}
+            {expand: true, cwd: 'src', src: ['**'], dest: '/'}
         ],
       },
     },
@@ -42,7 +42,6 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks ('grunt-aws-s3');
   grunt.loadNpmTasks ('grunt-cloudfront');
   
-
   grunt.registerTask('deploy', [
         // 'build',
         'aws_s3',

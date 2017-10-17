@@ -78,7 +78,22 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 25
           WriteCapacityUnits: 25
+    S3BucketFaviApp:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: favi-app
     S3BucketFaviCache:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: favi-cache
+    # CloudFrontDistributionFaviApp:
+    #   Type: AWS::CloudFront::Distribution
+    #   Properties:
+    #     DistributionConfig:
+    #       Aliases:
+    #         - favi.andrhamm.com
+    #       DefaultRootObject: index.html
+    #       Origins:
+    #         - DomainName: favi.andrhamm.com
+    #           Id: favi
+    #           S3OriginConfig:
