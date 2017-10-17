@@ -2,6 +2,40 @@ const AWS = require('aws-sdk');
 
 var dynamodb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
 
+// See https://github.com/stewartlord/serverless-ruby
+// const spawn = require('child_process').spawn;
+// const rubyproxy = function(file, event, context, callback) {
+//   var child  = spawn(file, [JSON.stringify(event)]);
+//   var stdout = '';
+//   var stderr = '';
+
+//   child.stdout.on('data', function (data) {
+//     stdout += data.toString();
+//   });
+//   child.stderr.on('data', function (data) {
+//     stderr += data.toString();
+//   });
+
+//   child.on('close', function(code) {
+//     if (code !== 0) {
+//       return callback(new Error(`Process exited with non-zero status code: ${code}`));
+//     }
+//     if (stderr) {
+//       console.error(stderr);
+//       console.log(stderr);
+//     }
+
+//     // We expect the child process to output valid JSON with a body
+//     try {
+//       var response  = JSON.parse(stdout);
+//       response.body = JSON.stringify(response.body);
+//       callback(null, response);
+//     } catch (error) {
+//       callback(error);
+//     }
+//   });
+// }
+
 module.exports.createFave = function(event, context, callback) {
   // rubyproxy('./create.rb', event, context, callback);
   
@@ -66,16 +100,4 @@ module.exports.createFave = function(event, context, callback) {
     }),
     headers: respHeaders
   });  
-}
-
-module.exports.faveStreamEvent = function(event, context, callback) {
-  console.log("faveStreamEvent func");
-  console.log(event);
-
-  var events = event.Records;
-  for (var i = 0, len = events.length; i < len; i++) {
-    console.log(JSON.stringify(events[i]));
-  }
-
-  context.succeed();
 }

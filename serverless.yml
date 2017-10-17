@@ -2,8 +2,11 @@ service: favi
 
 provider:
   name: aws
-  runtime: nodejs4.3
+  runtime: nodejs6.10
+  timeout: 180
   profile: tremorlab
+  environment:
+    DEBUG: "*"
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -28,17 +31,18 @@ package:
     - vendor
     - .bundle 
     - '*.rb'
+    - 'Gemfile*'
 
 functions:
   createFave:
-    handler: handler.createFave
+    handler: handlers/handler.createFave
     environment:
     events:
       - http:
           path: /faves
           method: post
   streamFunction:
-    handler: handler.faveStreamEvent
+    handler: handlers/stream.faveStreamEvent
     events:
        - stream:
           type: dynamodb
@@ -48,14 +52,12 @@ functions:
               - StreamArn
           batchSize: 1
 
-
 resources:
   Resources:
     FavesDynamoDbTable:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: FaveRecords
-        # Note: AttributeDefinitions should only contain attributes used in indexes/keys
         AttributeDefinitions:
           - AttributeName: hostname
             AttributeType: "S"
@@ -67,6 +69,3 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 25
           WriteCapacityUnits: 25
-
-plugins:
-  - serverless-plugin-bespoken

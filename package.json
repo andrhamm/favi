@@ -5,10 +5,11 @@
   "author": "Andrew Hammond",
   "license": "MIT",
   "devDependencies": {
-    "serverless": "^1.23.0",
-    "serverless-plugin-bespoken": "^0.0.6"
+    "serverless": "^1.23.0"
   },
   "dependencies": {
-    "aws-sdk": "^2.133.0"
+    "aws-sdk": "^2.133.0",
+    "phantomjs-lambda-pack": "^0.0.7",
+    "phantomjs-prebuilt": "^2.1.15"
   }
 }
