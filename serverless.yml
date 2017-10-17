@@ -22,6 +22,15 @@ provider:
         - dynamodb:DescribeStream
         - dynamodb:ListStreams
       Resource: arn:aws:dynamodb:*:*
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:GetObject
+        - s3:DeleteObject
+        - s3:ListBucket
+        - s3:ListObjects
+        - s3:CreateBucket
+      Resource: arn:aws:s3:::favi-cache:*:*"
 
 package:
   exclude:
@@ -69,3 +78,7 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 25
           WriteCapacityUnits: 25
+    S3BucketFaviCache:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: favi-cache
