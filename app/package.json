@@ -1,0 +1,13 @@
+{
+  "name": "favi-app",
+  "version": "0.0.1",
+  "description": "Serverless favicon scraping service",
+  "author": "Andrew Hammond",
+  "license": "MIT",
+  "devDependencies": {
+    "grunt": "^1.0.1",
+    "grunt-aws-s3": "^2.0.0",
+    "grunt-cli": "^1.2.0",
+    "grunt-cloudfront": "^0.2.2"
+  }
+}
