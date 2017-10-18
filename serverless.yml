@@ -105,6 +105,17 @@ functions:
               - FavesDynamoDbTable
               - StreamArn
           batchSize: 1
+  cacheFavicon:
+    description: Stream-event function to save copies of favicon images to S3
+    handler: handlers/cache.cacheFavicon
+    events:
+       - stream:
+          type: dynamodb
+          arn:
+            Fn::GetAtt:
+              - FavesDynamoDbTable
+              - StreamArn
+          batchSize: 10
   notifyPusher:
     description: Stream-event function to push dynamodb events to websockets
     handler: handlers/notify.notifyPusher
