@@ -62,15 +62,18 @@ functions:
             parameters:
               querystrings:
                 hostname: true
-                
+
   createFave:
     handler: handlers/handler.createFave
     events:
       - http:
           path: /faves
           method: post
-  streamFunction:
-    handler: handlers/stream.faveStreamEvent
+      - http:
+          path: /faves
+          method: options
+  scrapeFavicon:
+    handler: handlers/scrape.scrapeFavicon
     events:
        - stream:
           type: dynamodb

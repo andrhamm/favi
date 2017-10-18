@@ -7,6 +7,7 @@ var respHeaders = {
   'Access-Control-Allow-Credentials': false,
   'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Allow-Origin': 'https://favi.andrhamm.com',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS'
 };
 
 // See https://github.com/stewartlord/serverless-ruby
@@ -102,27 +103,34 @@ module.exports.readFave = function (event, context, callback) {
 module.exports.createFave = function (event, context, callback) {
   // rubyproxy('./create.rb', event, context, callback);
 
+  if (event.httpMethod === 'OPTIONS') {
+    callback(null, {
+      statusCode: 204,
+      headers: respHeaders
+    });
+  }
+  
   console.log ('createFave func');
   console.log (event);
 
   var reqBody = JSON.parse (event.body);
 
-  var hostnameAttr;
+  var hostnameParsed;
 
-  if (reqBody.hostname) {
+  if (reqBody && reqBody.hostname) {
     const URL = require ('url');
     var url = URL.parse (reqBody.hostname);
 
     if (url.hostname) {
-      hostnameAttr = url.protocol + '//' + url.hostname;
+      hostnameParsed = url.protocol + '//' + url.hostname;
 
       if (url.protocol && (url.protocol == 'http' || url.protocol == 'https')) {
-        hostnameAttr = url.protocol + '//' + hostnameAttr;
+        hostnameParsed = url.protocol + '//' + hostnameParsed;
       }
     }
   }
 
-  if (!hostnameAttr) {
+  if (!hostnameParsed) {
     callback (null, {
       statusCode: 422,
       body: JSON.stringify ({
@@ -135,7 +143,7 @@ module.exports.createFave = function (event, context, callback) {
   var putItem = {
     TableName: 'FaveRecords',
     Item: {
-      hostname: {S: hostnameAttr},
+      hostname: {S: hostnameParsed},
       created_at: {N: new Date ().getTime ().toString ()},
     },
     ConditionExpression: 'attribute_not_exists(hostname)',
@@ -143,16 +151,43 @@ module.exports.createFave = function (event, context, callback) {
 
   dynamodb.putItem (putItem, function (err, data) {
     if (err) {
-      // TODO: catch errors when trying to insert the same item
-      // and return different status code with existing doc
-      console.log (err, err.stack);
-      context.fail (err);
+      if (err.code == 'ConditionalCheckFailedException') {
+        var getItem = {
+          TableName: 'FaveRecords',
+          Key: {
+            hostname: {S: hostnameParsed},
+          },
+        };
+      
+        dynamodb.getItem (getItem, function (err, data) {
+          if (err) {
+            // TODO: catch errors when trying to insert the same item
+            // and return different status code with existing doc
+            console.log (err, err.stack);
+            context.fail (err);
+          }
+      
+          callback (null, {
+            statusCode: 200,
+            body: JSON.stringify ({
+              parsed_hostname: hostnameParsed,
+              item: data,
+            }),
+            headers: respHeaders,
+          });
+        });
+      } else {
+        // TODO: catch errors when trying to insert the same item
+        // and return different status code with existing doc
+        console.log (err, err.stack);
+        context.fail (err);
+      }
     }
 
     callback (null, {
       statusCode: 202,
       body: JSON.stringify ({
-        parsed_hostname: hostnameAttr,
+        parsed_hostname: hostnameParsed,
       }),
       headers: respHeaders,
     });

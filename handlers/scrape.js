@@ -9,8 +9,8 @@ const exec = phantomjsLambdaPack.exec;
 const AWS = require ('aws-sdk');
 var dynamodb = new AWS.DynamoDB ({apiVersion: '2012-08-10'});
 
-module.exports.faveStreamEvent = (event, context, callback) => {
-  console.log ('faveStreamEvent func');
+module.exports.scrapeFavicon = (event, context, callback) => {
+  console.log ('scrapeFavicon func');
   console.log (event);
 
   var events = event.Records;
@@ -61,8 +61,9 @@ module.exports.faveStreamEvent = (event, context, callback) => {
           };
 
           dynamodb.updateItem (updateItem, function (err, data) {
-            if (err) {
-              // TODO: catch errors when ConditionExpression fails
+            if (err && err.code != 'ConditionalCheckFailedException') {
+              // TODO: catch errors when trying to insert the same item
+              // and return different status code with existing doc
               console.log (err, err.stack);
               context.fail (err);
             }
