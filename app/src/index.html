@@ -53,8 +53,22 @@
             max-width: 300px;
         }
 
+        #fetch {
+            margin: 40px;
+        }
+
+        #url {
+            width: 300px;
+        }
+
         #error {
             color: red;
+        }
+
+        #results img {
+            width: 16px;
+            height: 16px;
+            margin: 0 10px;
         }
     </style>
 </head>
@@ -66,35 +80,109 @@
 
     <div class="app d-flex flex-row">
         <div class="left">
-            <input type="text" id="url" />
-            <button id="skwish">Fetch</button>
+            <form id="fetch">
+                <p>Enter a domain or URL <em>(ex: https://favi.andrhamm.com)</em></p>
+                <input type="text" id="url" />
+                <input type="submit" title="Fetch" />
+            </form>
             <span id="error" style="display: none;"></span>
+            <div id="loading" style="display: none;">Loading...</div>
+            <ul id="results" style="display: none;"></ul>
         </div>
         <div class="right">
+            <ul>
+                <li><a href="https://github.com/andrhamm/favi">Fork on Github</a></li>
+                <li><a href="https://github.com/andrhamm">Me on Github</a></li>
+                <li><a href="https://instagram.com/andrhamm">Me on Instagram</a></li>
+            </ul>
+            <p>Note that the coldstart for the lambda responsible for web scraping can have a long delay as it compiles the phantomJS headless browser.</p>
         </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
         crossorigin="anonymous"></script>
+    
+    <!-- make bootstrap shut up about popper -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+        
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1"
         crossorigin="anonymous"></script>
 
     <script type="text/javascript">
+        // TODO: move to separate static asset
         $(document).ready(function () {
             console.log("ready!");
 
-            $("#skwish").click(function(e){
+            var pollForFavicon = function(hostname) {
+                console.log("polling for updates to " + hostname);
+
+                var $li = $("#results > li[data-hostname='"+hostname+"']");
+
+                var p = $li.data("poll");
+                $li.data("poll", p+1);
+
+                $.ajax({
+                    url: "https://favi-api.andrhamm.com/faves",
+                    type: "GET",
+                    data: { hostname: hostname },
+                    dataType: 'json',
+                    success: function ( data, textStatus, jqXHR ) {
+                        if (data.item && data.item.Item && data.item.Item.favicon_src) {
+                            console.log("found favicon while polling for updates to " + hostname + ": " + data.item.Item.favicon_src.S);
+                            if (data.item.Item.favicon_src.S && data.item.Item.favicon_src.S != "null") {
+                                $li.html('<a href="'+data.parsed_hostname+'">'+data.parsed_hostname+'</a>: <img src="'+ data.item.Item.favicon_src.S + '" /><span>'+ data.item.Item.favicon_src.S + '</span>');
+                            } else {
+                                $li.html('<a href="'+data.parsed_hostname+'">'+data.parsed_hostname+'</a>: <img src="http://s2.googleusercontent.com/s2/favicons?domain='+encodeURIComponent(data.parsed_hostname)+'" /><span>(scraping failed, falling back to google favicon service)</span>');
+                            }
+                        } else {
+                            $("span.poll", $li).text(p+1);
+                            setTimeout(function(){pollForFavicon(hostname)}, 2000);
+                        }
+                    }
+                });
+            }
+
+            $("#fetch").on('submit', function (e) {
                 e.preventDefault();
 
                 var url = $("#url").val();
-                console.log(url);
+
+                $("#url").val('');
 
                 $.ajax({
-                    url: "https://favi-api.andrhamm.com/faves"
+                    url: "https://favi-api.andrhamm.com/faves",
+                    type: "POST",
+                    data: JSON.stringify({ hostname: url }),
+                    dataType: 'json',
+                    contentType: "application/json; charset=utf-8",
+                    beforeSend: function (xhr, opts) {
+                        $('#loading').show();
+                    },
+                    complete: function (xhr, textStatus) {
+                        $('#loading').hide();
+                    },
+                    success: function ( data, textStatus, jqXHR ) {
+                        if (data.item && data.item.Item && data.item.Item.favicon_src) {
+                            console.log("favicon has been scraped")
+                            $('#results').show();
+                            if (data.item.Item.favicon_src.S && data.item.Item.favicon_src.S != "null") {
+                                $('#results').prepend('<li data-hostname="'+data.parsed_hostname+'"><a href="'+data.parsed_hostname+'">'+data.parsed_hostname+'</a><img src="'+ data.item.Item.favicon_src.S + '" /><span>'+ data.item.Item.favicon_src.S + '</span></li>');
+                            } else {
+                                $('#results').prepend('<li data-hostname="'+data.parsed_hostname+'"><a href="'+data.parsed_hostname+'">'+data.parsed_hostname+'</a>: <img src="http://s2.googleusercontent.com/s2/favicons?domain='+encodeURIComponent(data.parsed_hostname)+'" /><span>(scraping failed, falling back to google favicon service)</span></li>');
+                            }
+                        } else {
+                            console.log("favicon has been queued for scraping, polling for updates...");
+                            $('#results').show();
+                            $('#results').prepend('<li data-hostname="'+data.parsed_hostname+'" data-poll="1">scraping favicon for '+data.parsed_hostname+' ... (<span class="poll">1</span>)</li>');
+
+                            setTimeout(function(){pollForFavicon(data.parsed_hostname)}, 2000);
+                        }
+                        // 202 // fave is now queued for scraping, poll for favicon url
+                        // 200 // fave is has been scraped already or is already queued
+                    }
                 })
                     .done(function (result) {
                         $('#error').hide();
-                        $('div.left').append('<p>' + result.skwish + '</p>');
                     })
                     .fail(function (err) {
                         $('#error').text('Request failed: ' + err.statusText).show();

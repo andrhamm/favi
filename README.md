@@ -22,11 +22,13 @@ $ serverless deploy
 
 ## Deploy Frontend
 
-From `app` dir of this repo
+From `app` dir of this repo:
 
 ```
 $ grunt deploy
 ```
+
+This will upload the front-end assets to S3 and issue an invalidation request to CloudFront. Invalidations can take a few minutes to process.
 
 ## Seeding
 
@@ -72,3 +74,5 @@ You can skip all of this and instead use the API Gateway endpoints generated on 
 * Automate certificate manager and custom domain stuff with cloudformation resources if possible
 * Automate front-end cloudfront distro with cloudformation in serverless resources
 * Clean up API interface, especially output of read endpoint
+* Use versioned JS/CSS assets to avoid needing to do CloudFront invalidations
+* Add moderation ability to clear record from db and re-queue for scraping

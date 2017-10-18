@@ -16,7 +16,7 @@ module.exports.scrapeFavicon = (event, context, callback) => {
   var events = event.Records;
   for (var i = 0, len = events.length; i < len; i++) {
     if (events[i].eventName == 'INSERT') {
-      var hostname = events[i].dynamodb.Keys.hostname.S;
+      var hostname = events[i].dynamodb.Keys.hostname.S.trim();
 
       console.log (
         'INSERT event for hostname ' +
@@ -33,9 +33,12 @@ module.exports.scrapeFavicon = (event, context, callback) => {
             return;
           }
 
-          console.log (`favicon url: ${stdout}`);
+          console.log (`favicon url: ${stdout.trim()}`);
           console.log (`stderr should be empty: ${stderr}`);
 
+          // TODO: handle errors for real
+          var faviconSrc = stdout.startsWith("http") ? stdout.trim() : "null";
+          
           var updateItem = {
             TableName: 'FaveRecords',
             ExpressionAttributeNames: {
@@ -44,7 +47,7 @@ module.exports.scrapeFavicon = (event, context, callback) => {
             },
             ExpressionAttributeValues: {
               ':f': {
-                S: stdout,
+                S: faviconSrc,
               },
               ':u': {
                 S: new Date ().getTime ().toString (),

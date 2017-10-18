@@ -109,7 +109,7 @@ module.exports.createFave = function (event, context, callback) {
       headers: respHeaders
     });
   }
-  
+
   console.log ('createFave func');
   console.log (event);
 
@@ -182,14 +182,14 @@ module.exports.createFave = function (event, context, callback) {
         console.log (err, err.stack);
         context.fail (err);
       }
+    } else {
+      callback (null, {
+        statusCode: 202,
+        body: JSON.stringify ({
+          parsed_hostname: hostnameParsed,
+        }),
+        headers: respHeaders,
+      });
     }
-
-    callback (null, {
-      statusCode: 202,
-      body: JSON.stringify ({
-        parsed_hostname: hostnameParsed,
-      }),
-      headers: respHeaders,
-    });
   });
 };
