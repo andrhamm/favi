@@ -144,6 +144,7 @@ module.exports.createFave = function (event, context, callback) {
     TableName: 'FaveRecords',
     Item: {
       hostname: {S: hostnameParsed},
+      source_ip: {S: event.requestContext.identity.sourceIp},
       created_at: {N: new Date ().getTime ().toString ()},
     },
     ConditionExpression: 'attribute_not_exists(hostname)',
