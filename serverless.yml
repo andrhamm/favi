@@ -42,7 +42,7 @@ provider:
         - s3:CreateBucket
         - s3:GetObjectAcl
         - s3:PutObjectAcl
-      Resource: arn:aws:s3:::favi-*:*:*"
+      Resource: arn:aws:s3:::favi-*/*"
 
 plugins:
   - serverless-plugin-custom-domain
@@ -63,6 +63,7 @@ package:
 
 functions:
   readFave:
+    description: HTTP-event function to lookup favicon data by hostname
     handler: handlers/handler.readFave
     events:
       - http:
@@ -73,8 +74,8 @@ functions:
             parameters:
               querystrings:
                 hostname: true
-
   createFave:
+    description: HTTP-event function to queue a hostname for favicon scraping
     handler: handlers/handler.createFave
     events:
       - http:
@@ -85,7 +86,22 @@ functions:
           path: /faves
           method: options
           private: false
+  seedFaves:
+    description: HTTP-event function to queue a batch of hostnames for favicon scraping
+    handler: handlers/handler.seedFaves
+    environment:
+      FAVI_SEED_KEY: ${file(env.yml):FAVI_SEED_KEY}
+    events:
+      - http:
+          path: /seed
+          method: post
+          private: true
+      - http:
+          path: /seed
+          method: options
+          private: false
   scrapeFavicon:
+    description: Stream-event function to scrape favicons in a headlesss browser
     handler: handlers/scrape.scrapeFavicon
     events:
        - stream:

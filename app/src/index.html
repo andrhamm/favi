@@ -109,6 +109,12 @@
                 phantomJS headless browser.</p>
             <p>Open your browser's developer console to view serverside events</p>
             <p>This public-facing app has rate-limiting and throttling in place to prevent abuse.</p>
+            <form id="seed">
+                <p>Enter API key for seeding DB:</p>
+                <input type="text" id="seed-key" />
+                <input type="submit" value="Seed" />
+                <span id="seed-error" style="display: none;"></span>
+            </form>
         </div>
     </div>
 
@@ -221,6 +227,44 @@
                     })
                     .fail(function (err) {
                         $('#error').text('Request failed: ' + err.statusText).show();
+                    });
+            });
+
+            $("#seed").on('submit', function (e) {
+                e.preventDefault();
+
+                var FAVI_SEED_KEY = $("#seed-key").val();
+
+                $.ajax({
+                    url: "https://favi-api.andrhamm.com/seed",
+                    type: "POST",
+                    // data: JSON.stringify({ hostname: url }),
+                    dataType: 'json',
+                    // contentType: "application/json; charset=utf-8",
+                    beforeSend: function (xhr, opts) {
+                        xhr.setRequestHeader("x-api-key", FAVI_SEED_KEY);
+                        $('#loading').show();
+                        $("#seed :input").prop("disabled", true);
+                    },
+                    complete: function (xhr, textStatus) {
+                        $('#loading').hide();
+                    },
+                    success: function (data, textStatus, jqXHR) {
+                        console.log("Seeding request successful.");
+                        setTimeout(function () {
+                            $("#seed :input").prop("disabled", false);
+                        }, 300000);
+                    }
+                })
+                    .done(function (result) {
+                        $('#seed-error').hide();
+                    })
+                    .fail(function (jqXHR, textStatus, errorThrown) {
+                        console.log(jqXHR);
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                        $('#seed-error').text('Request failed: ' + err.statusText).show();
+                        $("#seed :input").prop("disabled", false);
                     });
             });
         });

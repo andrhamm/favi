@@ -1,3 +1,6 @@
+var fs = require ('fs');
+var parse = require ('csv-parse');
+
 const AWS = require ('aws-sdk');
 
 var dynamodb = new AWS.DynamoDB ({apiVersion: '2012-08-10'});
@@ -193,4 +196,57 @@ module.exports.createFave = function (event, context, callback) {
       });
     }
   });
+};
+
+module.exports.seedFaves = function (event, context, callback) {
+  if (event.httpMethod === 'OPTIONS') {
+    callback (null, {
+      statusCode: 204,
+      headers: respHeaders,
+    });
+  }
+
+  var apiKey = event.requestContext.identity.apiKey;
+
+  if (apiKey != process.env.FAVI_SEED_KEY) {
+    callback (null, {
+      statusCode: 403,
+      body: JSON.stringify ({
+        message: 'Forbidden',
+      }),
+      headers: respHeaders,
+    });
+  } else {
+    var s3 = new AWS.S3 ({apiVersion: '2006-03-01'});
+
+    var params = {Bucket: 'favi-cache', Key: 'top-1m.csv'};
+
+    var parseParams = {
+      delimiter: ',',
+      from: 1,
+      to: 10,
+    };
+
+    s3
+      .getObject (params)
+      .createReadStream ()
+      .pipe (parse (parseParams))
+      .on ('data', function (csvrow) {
+        console.log ('row:');
+        console.log (csvrow);
+        //do something with csvrow
+        // csvData.push (csvrow);
+      })
+      .on ('end', function () {
+        //do something wiht csvData
+        // console.log (csvData);
+        console.log ('done parsing');
+
+        callback (null, {
+          statusCode: 202,
+          body: JSON.stringify ({}),
+          headers: respHeaders,
+        });
+      });
+  }
 };

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "aws-sdk": "^2.133.0",
+    "csv-parse": "^1.2.4",
     "phantomjs-lambda-pack": "^0.0.7",
     "phantomjs-prebuilt": "^2.1.15",
     "pusher": "^1.5.1"
