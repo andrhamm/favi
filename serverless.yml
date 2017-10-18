@@ -5,6 +5,16 @@ provider:
   runtime: nodejs6.10
   timeout: 180
   profile: tremorlab
+  apiKeys:
+    - favi-web-key
+    - favi-seed-key
+  usagePlan:
+    quota:
+      limit: 1000
+      period: DAY
+    throttle:
+      rateLimit: 5
+      burstLimit: 10
   environment:
     DEBUG: "*"
   iamRoleStatements:
@@ -58,6 +68,7 @@ functions:
       - http:
           path: /faves
           method: get
+          private: true
           request:
             parameters:
               querystrings:
@@ -69,9 +80,11 @@ functions:
       - http:
           path: /faves
           method: post
+          private: true
       - http:
           path: /faves
           method: options
+          private: false
   scrapeFavicon:
     handler: handlers/scrape.scrapeFavicon
     events:

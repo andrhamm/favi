@@ -5,9 +5,9 @@ var dynamodb = new AWS.DynamoDB ({apiVersion: '2012-08-10'});
 var respHeaders = {
   // for CORS... later
   'Access-Control-Allow-Credentials': false,
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type,x-api-key',
   'Access-Control-Allow-Origin': 'https://favi.andrhamm.com',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS'
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 };
 
 // See https://github.com/stewartlord/serverless-ruby
@@ -104,9 +104,9 @@ module.exports.createFave = function (event, context, callback) {
   // rubyproxy('./create.rb', event, context, callback);
 
   if (event.httpMethod === 'OPTIONS') {
-    callback(null, {
+    callback (null, {
       statusCode: 204,
-      headers: respHeaders
+      headers: respHeaders,
     });
   }
 
@@ -158,7 +158,7 @@ module.exports.createFave = function (event, context, callback) {
             hostname: {S: hostnameParsed},
           },
         };
-      
+
         dynamodb.getItem (getItem, function (err, data) {
           if (err) {
             // TODO: catch errors when trying to insert the same item
@@ -166,7 +166,7 @@ module.exports.createFave = function (event, context, callback) {
             console.log (err, err.stack);
             context.fail (err);
           }
-      
+
           callback (null, {
             statusCode: 200,
             body: JSON.stringify ({

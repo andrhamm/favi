@@ -110,6 +110,8 @@
 
     <script type="text/javascript">
         // TODO: move to separate static asset
+        var FAVI_API_KEY = 'hH3DeRvreM2naVt7ENinj2YTuXpS09ZY1q5smZk9';
+
         $(document).ready(function () {
             console.log("ready!");
 
@@ -126,7 +128,10 @@
                     type: "GET",
                     data: { hostname: hostname },
                     dataType: 'json',
-                    success: function ( data, textStatus, jqXHR ) {
+                    beforeSend: function (request) {
+                        request.setRequestHeader("x-api-key", FAVI_API_KEY);
+                    },
+                    success: function (data, textStatus, jqXHR) {
                         if (data.item && data.item.Item && data.item.Item.favicon_src) {
                             console.log("found favicon while polling for updates to " + hostname + ": " + data.item.Item.favicon_src.S);
                             if (data.item.Item.favicon_src.S && data.item.Item.favicon_src.S != "null") {
@@ -156,6 +161,7 @@
                     dataType: 'json',
                     contentType: "application/json; charset=utf-8",
                     beforeSend: function (xhr, opts) {
+                        xhr.setRequestHeader("x-api-key", FAVI_API_KEY);
                         $('#loading').show();
                     },
                     complete: function (xhr, textStatus) {
