@@ -95,6 +95,21 @@ functions:
               - FavesDynamoDbTable
               - StreamArn
           batchSize: 1
+  notifyPusher:
+    description: Stream-event function to push dynamodb events to websockets
+    handler: handlers/notify.notifyPusher
+    environment:
+      PUSHER_APP_ID: ${file(env.yml):PUSHER_APP_ID}
+      PUSHER_KEY: ${file(env.yml):PUSHER_KEY}
+      PUSHER_SECRET: ${file(env.yml):PUSHER_SECRET}
+    events:
+       - stream:
+          type: dynamodb
+          arn:
+            Fn::GetAtt:
+              - FavesDynamoDbTable
+              - StreamArn
+          batchSize: 100
 
 resources:
   Resources:

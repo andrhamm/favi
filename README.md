@@ -12,6 +12,15 @@ bundle package
 yarn install # or `npm install`
 ```
 
+You should create an `env.yml` file in the project root (do not commit to source). It must contain the following keys:
+
+```
+PUSHER_APP_ID
+PUSHER_KEY
+PUSHER_SECRET
+FAVI_SEED_KEY
+```
+
 ## Deploy Backend
 
 From root of this repo
