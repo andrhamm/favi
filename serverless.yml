@@ -30,6 +30,8 @@ provider:
         - dynamodb:GetShardIterator
         - dynamodb:DescribeStream
         - dynamodb:ListStreams
+        - dynamodb:BatchWriteItem
+        - dynamodb:BatchGetItem
       Resource: arn:aws:dynamodb:*:*
     - Effect: Allow
       Action:
@@ -133,7 +135,7 @@ functions:
             Fn::GetAtt:
               - FavesDynamoDbTable
               - StreamArn
-          batchSize: 10
+          batchSize: 25
   notifyPusher:
     description: Stream-event function to push dynamodb events to websockets
     handler: handlers/notify.notifyPusher

@@ -255,7 +255,7 @@ module.exports.seedFaves = function (event, context, callback) {
 
             var i = csvrow[0];
             var record = {
-              Data: csvrow[1],
+              Data: 'http://' + csvrow[1],
               PartitionKey: "1",
             };
 
