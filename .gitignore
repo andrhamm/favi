@@ -1,0 +1,15 @@
+top-1m.csv*
+seed.txt
+
+node_modules
+app/node_modules
+.serverless
+env.yml
+
+vendor
+ruby
+.bundle
+Gemfile*
+.ruby-version
+*.rb
+fetch-ruby.sh

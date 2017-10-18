@@ -1,3 +1,22 @@
+# favi
+
+Favi is a favicon scraping platform built on Serverless technologies.
+
+Technologies used:
+
+* Serverless Framework - makes deploying serverless services to AWS (and other platforms) a breeze
+* AWS Lambda - functions that run in the cloud, scaled automatically by AWS
+* AWS API Gateway - HTTP interface for transforming requests into events, which can then be processed by Lambda functions
+* AWS DynamoDb - NoSQL document-based database; massively scalable
+* AWS DynamoDb Streams - Trigger Lambda functions when creating or modifying documents in DynamoDb; two phase commit begone!
+* AWS CloudFront - Amazon's CDN platform, used for hosting and caching the single page web app
+* AWS S3 - Amazon's Storage platform; hosts the web app and used to store some state for the app
+* AWS Route53 - DNS management for custom domain name for the application
+* AWS Certificate Manager - SSL certificate to secure the app and the API
+* AWS CloudFormation - for maintaing AWS resource blueprints in source control
+* AWS CloudWatch - for logging
+* Pusher - websockets for realtime client-server communication
+
 ## Overview
 
 Front-end app is more or less manually provisioned as an S3-backed CloudFront Web Distribution. It lives in the `app` dir and has its own package management. Deploying the backend app first will stub out some basic resources. In the future I'd like to have more of the front-end app covered with CloudFormation for easier initialization. See DNS Config section for some manual steps to get the endpoints configured.
@@ -29,6 +48,12 @@ From root of this repo
 $ serverless deploy
 ```
 
+View logs for a given function by name (as specified in `serverless.yml`):
+
+```
+$ serverless logs -f createFave -t
+```
+
 ## Deploy Frontend
 
 From `app` dir of this repo:
@@ -49,13 +74,9 @@ wget http://s3.amazonaws.com/alexa-static/top-1m.csv.zip .
 unzip top-1m.csv.zip
 ```
 
-Run seed script, optionally specifying a limit (default is 100):
+The unzipped seed file must be uploaded to the `favi-cache` bucket. Once it is hosted in the S3 bucket, use the web UI to request a batch of seed to be processed. The backend will maintain its place between seed requests so as not to duplicate efforts. The batch of domains will be pushed into a Kinesis stream and processed asynchronously.
 
-```
-ruby seed.rb 300
-```
-
-The seed script will start from where it left off if previously ran on the same machine. It does this by writing to a `seed.txt` file with the cursor.
+Requesting a batch of seeding requires a secret API key in order to prevent abuse, since this process takes potentially a large amount of processing.
 
 ## DNS Config
 

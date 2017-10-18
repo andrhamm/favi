@@ -1,5 +1,4 @@
 var fs = require ('fs');
-var parse = require ('csv-parse');
 
 const AWS = require ('aws-sdk');
 
@@ -219,34 +218,69 @@ module.exports.seedFaves = function (event, context, callback) {
   } else {
     var s3 = new AWS.S3 ({apiVersion: '2006-03-01'});
 
-    var params = {Bucket: 'favi-cache', Key: 'top-1m.csv'};
+    var s3SeedFileParams = {Bucket: 'favi-cache', Key: 'top-1m.csv'};
+    var s3SeedCursorFileParams = {Bucket: 'favi-cache', Key: 'seed-cursor.txt'};
 
-    var parseParams = {
-      delimiter: ',',
-      from: 1,
-      to: 10,
-    };
+    s3.getObject (s3SeedCursorFileParams, function (err, data) {
+      if (err) {
+        console.log (err, err.stack);
+        context.fail (err);
+      } else {
+        cursor = parseInt (data.Body.toString('utf-8')) || 1;
+        var endCursor = cursor + 10;
 
-    s3
-      .getObject (params)
-      .createReadStream ()
-      .pipe (parse (parseParams))
-      .on ('data', function (csvrow) {
-        console.log ('row:');
-        console.log (csvrow);
-        //do something with csvrow
-        // csvData.push (csvrow);
-      })
-      .on ('end', function () {
-        //do something wiht csvData
-        // console.log (csvData);
-        console.log ('done parsing');
+        console.log ('seed cursor start=' + cursor + ' end=' + endCursor);
 
-        callback (null, {
-          statusCode: 202,
-          body: JSON.stringify ({}),
-          headers: respHeaders,
-        });
-      });
+        var count = 0;
+
+        var stream = s3.getObject (s3SeedFileParams).createReadStream ();
+
+        var csv = require ('fast-csv');
+
+        var csvStream = csv
+          .parse ()
+          .validate(function(csvrow){
+            var i = csvrow[0];
+            var hostname = csvrow[1];
+              
+            return i >= cursor && i <= endCursor;
+          })
+          .on ('data', function (csvrow) {
+            console.log ('validated row:');
+            console.log (csvrow);
+
+            var i = csvrow[0];
+            var hostname = csvrow[1];
+
+            count += 1;
+          })
+          .on ('end', function () {
+            console.log ('done parsing');
+
+            s3SeedCursorFileParams.Body = endCursor.toString ();
+
+            s3.putObject (s3SeedCursorFileParams, function (err, data) {
+              if (err) {
+                console.log (err, err.stack); // an error occurred
+                context.fail (err);
+              } else {
+                console.log ('saved cursor as ' + endCursor);
+
+                callback (null, {
+                  statusCode: 202,
+                  body: JSON.stringify ({
+                    count: count,
+                    cursor_start: cursor,
+                    cursor_end: endCursor,
+                  }),
+                  headers: respHeaders,
+                });
+              }
+            });
+          });
+
+        stream.pipe (csvStream);
+      }
+    });
   }
 };

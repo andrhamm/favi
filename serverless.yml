@@ -3,7 +3,6 @@ service: favi
 provider:
   name: aws
   runtime: nodejs6.10
-  timeout: 180
   profile: tremorlab
   apiKeys:
     - favi-web-key
@@ -34,15 +33,8 @@ provider:
       Resource: arn:aws:dynamodb:*:*
     - Effect: Allow
       Action:
-        - s3:PutObject
-        - s3:GetObject
-        - s3:DeleteObject
-        - s3:ListBucket
-        - s3:ListObjects
-        - s3:CreateBucket
-        - s3:GetObjectAcl
-        - s3:PutObjectAcl
-      Resource: arn:aws:s3:::favi-*/*"
+        - s3:*
+      Resource: arn:aws:s3:::favi-*/*
 
 plugins:
   - serverless-plugin-custom-domain
@@ -89,6 +81,7 @@ functions:
   seedFaves:
     description: HTTP-event function to queue a batch of hostnames for favicon scraping
     handler: handlers/handler.seedFaves
+    timeout: 60
     environment:
       FAVI_SEED_KEY: ${file(env.yml):FAVI_SEED_KEY}
     events:
@@ -103,6 +96,7 @@ functions:
   scrapeFavicon:
     description: Stream-event function to scrape favicons in a headlesss browser
     handler: handlers/scrape.scrapeFavicon
+    timeout: 180
     events:
        - stream:
           type: dynamodb
