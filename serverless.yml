@@ -35,6 +35,14 @@ provider:
       Action:
         - s3:*
       Resource: arn:aws:s3:::favi-*/*
+    - Effect: "Allow"
+      Action:
+        - kinesis:DescribeStream
+        - kinesis:GetRecords
+        - kinesis:GetShardIterator
+        - kinesis:ListStreams
+        - kinesis:PutRecords
+      Resource: arn:aws:kinesis:*:*
 
 plugins:
   - serverless-plugin-custom-domain
@@ -78,6 +86,16 @@ functions:
           path: /faves
           method: options
           private: false
+  createFaveBatch:
+    description: Stream-event function to queue bulk hostnames for favicon scraping
+    handler: handlers/seed.createFaveBatch
+    events:
+      - stream:
+          type: kinesis
+          arn:
+            Fn::GetAtt:
+              - KinesisStreamFaveSeeds
+              - Arn
   seedFaves:
     description: HTTP-event function to queue a batch of hostnames for favicon scraping
     handler: handlers/handler.seedFaves
@@ -157,6 +175,27 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: favi-cache
+    KinesisStreamFaveSeeds:
+      Type: AWS::Kinesis::Stream
+      Properties:
+        Name: FaveSeeds
+        ShardCount: 1
+    # KinesisTestMap:
+    #   Type: AWS::Lambda::EventSourceMapping
+    #   DependsOn : 
+    #     - "CreateFaveBatchLambdaFunction"
+    #     - "IamPolicyLambdaExecution"
+    #   Properties:
+    #     BatchSize: 10
+    #     EventSourceArn:
+    #       Fn::GetAtt:
+    #         - "KinesisStreamFaveSeeds"
+    #         - "Arn"
+    #     FunctionName:
+    #       Fn::GetAtt:
+    #         - "CreateFaveBatchLambdaFunction"
+    #         - "Arn"
+    #     StartingPosition: "TRIM_HORIZON"
     # CloudFrontDistributionFaviApp:
     #   Type: AWS::CloudFront::Distribution
     #   Properties:

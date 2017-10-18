@@ -226,7 +226,7 @@ module.exports.seedFaves = function (event, context, callback) {
         console.log (err, err.stack);
         context.fail (err);
       } else {
-        cursor = parseInt (data.Body.toString('utf-8')) || 1;
+        cursor = parseInt (data.Body.toString ('utf-8')) || 1;
         var endCursor = cursor + 10;
 
         console.log ('seed cursor start=' + cursor + ' end=' + endCursor);
@@ -237,12 +237,16 @@ module.exports.seedFaves = function (event, context, callback) {
 
         var csv = require ('fast-csv');
 
+        var kinesis = new AWS.Kinesis ({apiVersion: '2013-12-02'});
+
+        var records = [];
+
         var csvStream = csv
           .parse ()
-          .validate(function(csvrow){
+          .validate (function (csvrow) {
             var i = csvrow[0];
             var hostname = csvrow[1];
-              
+
             return i >= cursor && i <= endCursor;
           })
           .on ('data', function (csvrow) {
@@ -250,33 +254,51 @@ module.exports.seedFaves = function (event, context, callback) {
             console.log (csvrow);
 
             var i = csvrow[0];
-            var hostname = csvrow[1];
+            var record = {
+              Data: csvrow[1],
+              PartitionKey: "1",
+            };
+
+            records.push (record);
 
             count += 1;
           })
           .on ('end', function () {
             console.log ('done parsing');
 
-            s3SeedCursorFileParams.Body = endCursor.toString ();
+            kinesis.putRecords (
+              {
+                Records: records,
+                StreamName: 'FaveSeeds',
+              },
+              function (err, data) {
+                if (err) {
+                  console.log (err, err.stack); // an error occurred
+                  context.fail (err);
+                } else {
+                  s3SeedCursorFileParams.Body = endCursor.toString ();
 
-            s3.putObject (s3SeedCursorFileParams, function (err, data) {
-              if (err) {
-                console.log (err, err.stack); // an error occurred
-                context.fail (err);
-              } else {
-                console.log ('saved cursor as ' + endCursor);
+                  s3.putObject (s3SeedCursorFileParams, function (err, data) {
+                    if (err) {
+                      console.log (err, err.stack); // an error occurred
+                      context.fail (err);
+                    } else {
+                      console.log ('saved cursor as ' + endCursor);
 
-                callback (null, {
-                  statusCode: 202,
-                  body: JSON.stringify ({
-                    count: count,
-                    cursor_start: cursor,
-                    cursor_end: endCursor,
-                  }),
-                  headers: respHeaders,
-                });
+                      callback (null, {
+                        statusCode: 202,
+                        body: JSON.stringify ({
+                          count: count,
+                          cursor_start: cursor,
+                          cursor_end: endCursor,
+                        }),
+                        headers: respHeaders,
+                      });
+                    }
+                  });
+                }
               }
-            });
+            );
           });
 
         stream.pipe (csvStream);
