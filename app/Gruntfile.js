@@ -9,6 +9,7 @@ module.exports = function (grunt) {
         region: 'us-east-1',
         uploadConcurrency: 5, // 5 simultaneous uploads
         downloadConcurrency: 5, // 5 simultaneous downloads
+        access: 'public-read'
       },
       live: {
         options: {
@@ -26,8 +27,8 @@ module.exports = function (grunt) {
         region: 'us-east-1',
         distributionId: 'E1B22UJPEK0NQJ',
         awsProfile: 'tremorlab',
-        listInvalidations: true,
-        listDistributions: false,
+        // listInvalidations: true,
+        // listDistributions: false,
       },
       live: {
         CallerReference: Date.now ().toString (),
