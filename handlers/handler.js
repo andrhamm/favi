@@ -255,67 +255,112 @@ module.exports.seedFaves = function (event, context, callback) {
               context.fail (err);
             } else {
               snsArn = data.TopicArn;
+              var csvStream = csv
+                .parse ()
+                .validate (function (csvrow) {
+                  var i = csvrow[0];
+                  var hostname = csvrow[1];
+
+                  return i >= cursor && i <= endCursor;
+                })
+                .on ('data', function (csvrow) {
+                  console.log ('validated row:');
+                  console.log (csvrow);
+
+                  var i = csvrow[0];
+                  var messageParams = {
+                    TopicArn: snsArn,
+                    Message: 'http://' + csvrow[1],
+                  };
+
+                  sns.publish (messageParams, function (err, data) {
+                    if (err) {
+                      console.log (err, err.stack);
+                      errors += 1;
+                    } else {
+                      console.log (data);
+                      count += 1;
+                    }
+                  });
+                })
+                .on ('end', function () {
+                  console.log ('done parsing');
+
+                  s3SeedCursorFileParams.Body = endCursor.toString ();
+
+                  s3.putObject (s3SeedCursorFileParams, function (err, data) {
+                    if (err) {
+                      console.log (err, err.stack); // an error occurred
+                      context.fail (err);
+                    } else {
+                      console.log ('saved cursor as ' + endCursor);
+
+                      callback (null, {
+                        statusCode: 202,
+                        body: JSON.stringify ({
+                          errors: errors,
+                          count: count,
+                          cursor_start: cursor,
+                          cursor_end: endCursor,
+                        }),
+                        headers: respHeaders,
+                      });
+                    }
+                  });
+                });
+
+              stream.pipe (csvStream);
             }
           }
         );
+      }
+    });
+  }
+};
 
-        var csvStream = csv
-          .parse ()
-          .validate (function (csvrow) {
-            var i = csvrow[0];
-            var hostname = csvrow[1];
+module.exports.scrapeDynamoToSns = function (event, context, callback) {
+  console.log ('scrapeDynamoToSns func');
+  console.log (event);
 
-            return i >= cursor && i <= endCursor;
-          })
-          .on ('data', function (csvrow) {
-            console.log ('validated row:');
-            console.log (csvrow);
+  var sns = new AWS.SNS ({apiVersion: '2010-03-31'});
+  var snsArn;
+  // TODO: would be nice to pass this ARN in a env var
+  // without hardcoding it... not sure if Serverless
+  // supports dynamically using CloudFormation functions
+  // for env vars...
+  sns.createTopic (
+    {
+      Name: 'FaveScrapeJobs',
+    },
+    function (err, data) {
+      if (err) {
+        console.log (err, err.stack);
+        context.fail (err);
+      } else {
+        snsArn = data.TopicArn;
 
-            var i = csvrow[0];
+        var events = event.Records;
+        for (var i = 0, len = events.length; i < len; i++) {
+          if (events[i].eventName == 'INSERT') {
+            var hostname = events[i].dynamodb.Keys.hostname.S.trim ();
+
             var messageParams = {
               TopicArn: snsArn,
-              Message: 'http://' + csvrow[1],
+              Message: hostname,
             };
 
             sns.publish (messageParams, function (err, data) {
               if (err) {
                 console.log (err, err.stack);
-                errors += 1;
               } else {
-                count += 1;
+                console.log (data);
               }
             });
-          })
-          .on ('end', function () {
-            console.log ('done parsing');
-
-            s3SeedCursorFileParams.Body = endCursor.toString ();
-
-            s3.putObject (s3SeedCursorFileParams, function (err, data) {
-              if (err) {
-                console.log (err, err.stack); // an error occurred
-                context.fail (err);
-              } else {
-                console.log ('saved cursor as ' + endCursor);
-
-                callback (null, {
-                  statusCode: 202,
-                  body: JSON.stringify ({
-                    errors: errors,
-                    count: count,
-                    cursor_start: cursor,
-                    cursor_end: endCursor,
-                  }),
-                  headers: respHeaders,
-                });
-              }
-            });
-          });
-
-        stream.pipe (csvStream);
+          }
+        }
       }
-    });
-  }
+    }
+  );
 };
 
 module.exports.streamFaves = function (event, context, callback) {

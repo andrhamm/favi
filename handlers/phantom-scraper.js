@@ -3,6 +3,18 @@ var page = webPage.create ();
 var system = require ('system');
 var args = system.args;
 
+page.onError = function(msg, trace) {
+  // var msgStack = ['ERROR: ' + msg];
+  // if (trace && trace.length) {
+  //     msgStack.push('TRACE:');
+  //     trace.forEach(function(t) {
+  //         msgStack.push(' -> ' + t.file + ': ' + t.line + (t.function ? ' (in function "' + t.function + '")' : ''));
+  //     });
+  // }
+  // uncomment to log into the console 
+  // console.error(msgStack.join('\n'));
+};
+
 page.open (args[1], function (status) {
   try {
     var favicon = page.evaluate (function () {

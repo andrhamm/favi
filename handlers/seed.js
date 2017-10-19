@@ -11,17 +11,12 @@ module.exports.createFaveBatch = function (event, context, callback) {
   for (var index = 0; index < event.Records.length; index++) {
     var record = event.Records[index];
 
-    // Kinesis data is base64 encoded so decode here
-    var hostname = new Buffer (record.kinesis.data, 'base64').toString (
-      'ascii'
-    );
-
-    console.log ('Decoded payload:', hostname);
+    console.log(record.Sns.Message);
 
     batchWriteItems.push ({
       PutRequest: {
         Item: {
-          hostname: {S: hostname},
+          hostname: {S: record.Sns.Message},
           created_at: createdAt,
         },
       },

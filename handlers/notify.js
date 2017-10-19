@@ -53,9 +53,11 @@ module.exports.notifyPusherAll = (event, context, callback) => {
       for (var index = 0; index < data.Items.length; index++) {
         var element = data.Items[index];
 
-        console.log (element.hostname.S + ' (' + element.favicon_src.S + ')');
+        if (element.favicon_src && element.favicon_src.S) {
+          console.log (element.hostname.S + ' (' + element.favicon_src.S + ')');
 
-        pusher.trigger (channel, 'fave-event-stream', element);
+          pusher.trigger (channel, 'fave-event-stream', element);
+        }
       }
     }
   });

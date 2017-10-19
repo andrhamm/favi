@@ -122,10 +122,9 @@ functions:
           path: /faves/stream
           method: options
           private: false
-  scrapeFavicon:
-    description: Stream-event function to scrape favicons in a headlesss browser
-    handler: handlers/scrape.scrapeFavicon
-    timeout: 180
+  scrapeDynamoToSns:
+    description: Stream-event function to send dynamodb stream events to SNS
+    handler: handlers/handler.scrapeDynamoToSns
     events:
        - stream:
           type: dynamodb
@@ -133,7 +132,13 @@ functions:
             Fn::GetAtt:
               - FavesDynamoDbTable
               - StreamArn
-          batchSize: 1
+          batchSize: 25
+  scrapeFavicon:
+    description: Stream-event function to scrape favicons in a headlesss browser
+    handler: handlers/scrape.scrapeFavicon
+    timeout: 180
+    events:
+      - sns: FaveScrapeJobs
   cacheFavicon:
     description: Stream-event function to save copies of favicon images to S3
     handler: handlers/cache.cacheFavicon
@@ -197,6 +202,10 @@ resources:
       Type: AWS::SNS::Topic
       Properties:
         TopicName: FaveSeeds
+    SNSTopicFaveScrapeJobs:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: FaveScrapeJobs
     # KinesisTestMap:
     #   Type: AWS::Lambda::EventSourceMapping
     #   DependsOn : 

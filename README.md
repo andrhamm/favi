@@ -74,7 +74,7 @@ wget http://s3.amazonaws.com/alexa-static/top-1m.csv.zip .
 unzip top-1m.csv.zip
 ```
 
-The unzipped seed file must be uploaded to the `favi-cache` bucket. Once it is hosted in the S3 bucket, use the web UI to request a batch of seed to be processed. The backend will maintain its place between seed requests so as not to duplicate efforts. The batch of domains will be pushed into a Kinesis stream and processed asynchronously.
+The unzipped seed file must be uploaded to the `favi-cache` bucket. Once it is hosted in the S3 bucket, use the web UI to request a batch of seed to be processed. The backend will maintain its place between seed requests so as not to duplicate efforts. The batch of domains will be pushed into SNS and processed asynchronously.
 
 Requesting a batch of seeding requires a secret API key in order to prevent abuse, since this process takes potentially a large amount of processing.
 

@@ -15,66 +15,64 @@ module.exports.scrapeFavicon = (event, context, callback) => {
 
   var events = event.Records;
   for (var i = 0, len = events.length; i < len; i++) {
-    if (events[i].eventName == 'INSERT') {
-      var hostname = events[i].dynamodb.Keys.hostname.S.trim();
+    var hostname = events[i].Sns.Message;
 
-      console.log (
-        'INSERT event for hostname ' +
-          hostname +
-          ': ' +
-          JSON.stringify (events[i])
-      );
+    console.log (
+      'INSERT event for hostname ' +
+        hostname +
+        ': ' +
+        JSON.stringify (events[i])
+    );
 
-      exec (
-        [__dirname + '/phantom-scraper.js', hostname],
-        (error, stdout, stderr) => {
-          if (error) {
-            console.error (`exec error: ${error}`);
-            return;
+    exec (
+      [__dirname + '/phantom-scraper.js', hostname],
+      (error, stdout, stderr) => {
+        if (error) {
+          console.error (`exec error: ${error}`);
+          return;
+        }
+
+        console.log (`favicon url: ${stdout.trim ()}`);
+        console.log (`stderr should be empty: ${stderr}`);
+
+        // TODO: handle errors for real
+        var faviconSrc = stdout.startsWith ('http') ? stdout.trim () : 'null';
+
+        var updateItem = {
+          TableName: 'FaveRecords',
+          ExpressionAttributeNames: {
+            '#F': 'favicon_src',
+            '#U': 'updated_at',
+          },
+          ExpressionAttributeValues: {
+            ':f': {
+              S: faviconSrc,
+            },
+            ':u': {
+              S: new Date ().getTime ().toString (),
+            },
+          },
+          Key: {
+            hostname: {
+              S: hostname,
+            },
+          },
+          ReturnValues: 'ALL_NEW',
+          UpdateExpression: 'SET #F = :f, #U = :u',
+          ConditionExpression: 'attribute_not_exists(favicon_src)',
+        };
+
+        dynamodb.updateItem (updateItem, function (err, data) {
+          if (err && err.code != 'ConditionalCheckFailedException') {
+            // TODO: catch errors when trying to insert the same item
+            // and return different status code with existing doc
+            console.log (err, err.stack);
+            context.fail (err);
           }
 
-          console.log (`favicon url: ${stdout.trim()}`);
-          console.log (`stderr should be empty: ${stderr}`);
-
-          // TODO: handle errors for real
-          var faviconSrc = stdout.startsWith("http") ? stdout.trim() : "null";
-          
-          var updateItem = {
-            TableName: 'FaveRecords',
-            ExpressionAttributeNames: {
-              '#F': 'favicon_src',
-              '#U': 'updated_at',
-            },
-            ExpressionAttributeValues: {
-              ':f': {
-                S: faviconSrc,
-              },
-              ':u': {
-                S: new Date ().getTime ().toString (),
-              },
-            },
-            Key: {
-              hostname: {
-                S: hostname,
-              },
-            },
-            ReturnValues: 'ALL_NEW',
-            UpdateExpression: 'SET #F = :f, #U = :u',
-            ConditionExpression: 'attribute_not_exists(favicon_src)',
-          };
-
-          dynamodb.updateItem (updateItem, function (err, data) {
-            if (err && err.code != 'ConditionalCheckFailedException') {
-              // TODO: catch errors when trying to insert the same item
-              // and return different status code with existing doc
-              console.log (err, err.stack);
-              context.fail (err);
-            }
-
-            context.succeed();
-          });
-        }
-      );
-    }
+          context.succeed ();
+        });
+      }
+    );
   }
 };
