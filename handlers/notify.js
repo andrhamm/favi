@@ -1,5 +1,9 @@
 'use strict';
 
+const AWS = require ('aws-sdk');
+
+var dynamodb = new AWS.DynamoDB ({apiVersion: '2012-08-10'});
+
 var Pusher = require ('pusher');
 
 var pusher = new Pusher ({
@@ -26,4 +30,33 @@ module.exports.notifyPusher = (event, context, callback) => {
       payload
     );
   }
+};
+
+module.exports.notifyPusherAll = (event, context, callback) => {
+  console.log (event);
+
+  var params = {
+    ProjectionExpression: 'hostname, favicon_src',
+    TableName: 'FaveRecords',
+  };
+
+  var channel = 'stream-' + event.channel;
+
+  dynamodb.scan (params, function (err, data) {
+    if (err) {
+      console.log (err, err.stack);
+      context.fail (err);
+    } else {
+      console.log (
+        'Streaming ' + data.Items.length + ' faves to Pusher channel ' + channel
+      );
+      for (var index = 0; index < data.Items.length; index++) {
+        var element = data.Items[index];
+
+        console.log (element.hostname.S + ' (' + element.favicon_src.S + ')');
+
+        pusher.trigger (channel, 'fave-event-stream', element);
+      }
+    }
+  });
 };

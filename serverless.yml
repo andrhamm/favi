@@ -45,6 +45,11 @@ provider:
         - kinesis:ListStreams
         - kinesis:PutRecords
       Resource: arn:aws:kinesis:*:*
+    - Effect: Allow
+      Action:
+        - lambda:InvokeFunction
+        - lambda:InvokeAsync
+      Resource: "*"
 
 plugins:
   - serverless-plugin-custom-domain
@@ -113,6 +118,19 @@ functions:
           path: /seed
           method: options
           private: false
+  streamFaves:
+    description: HTTP-event function to queue a request to stream all faves to websocket
+    handler: handlers/handler.streamFaves
+    timeout: 60
+    events:
+      - http:
+          path: /faves/stream
+          method: post
+          private: true
+      - http:
+          path: /faves/stream
+          method: options
+          private: false
   scrapeFavicon:
     description: Stream-event function to scrape favicons in a headlesss browser
     handler: handlers/scrape.scrapeFavicon
@@ -151,6 +169,13 @@ functions:
               - FavesDynamoDbTable
               - StreamArn
           batchSize: 100
+  notifyPusherAll:
+    description: Function to push all faves to websockets
+    handler: handlers/notify.notifyPusherAll
+    environment:
+      PUSHER_APP_ID: ${file(env.yml):PUSHER_APP_ID}
+      PUSHER_KEY: ${file(env.yml):PUSHER_KEY}
+      PUSHER_SECRET: ${file(env.yml):PUSHER_SECRET}
 
 resources:
   Resources:

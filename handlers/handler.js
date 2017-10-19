@@ -227,7 +227,7 @@ module.exports.seedFaves = function (event, context, callback) {
         context.fail (err);
       } else {
         cursor = parseInt (data.Body.toString ('utf-8')) || 1;
-        var endCursor = cursor + 10;
+        var endCursor = cursor + 1000;
 
         console.log ('seed cursor start=' + cursor + ' end=' + endCursor);
 
@@ -256,7 +256,7 @@ module.exports.seedFaves = function (event, context, callback) {
             var i = csvrow[0];
             var record = {
               Data: 'http://' + csvrow[1],
-              PartitionKey: "1",
+              PartitionKey: '1',
             };
 
             records.push (record);
@@ -305,4 +305,61 @@ module.exports.seedFaves = function (event, context, callback) {
       }
     });
   }
+};
+
+module.exports.streamFaves = function (event, context, callback) {
+  if (event.httpMethod === 'OPTIONS') {
+    callback (null, {
+      statusCode: 204,
+      headers: respHeaders,
+    });
+  }
+
+  console.log ('streamFaves func');
+  console.log (event);
+
+  var reqBody = JSON.parse (event.body);
+
+  var channel;
+  if (reqBody && reqBody.channel) {
+    channel = reqBody.channel;
+  } else {
+    callback (null, {
+      statusCode: 422,
+      body: JSON.stringify ({
+        message: 'Missing or invalid channel',
+      }),
+      headers: respHeaders,
+    });
+  }
+
+  var lambda = new AWS.Lambda ({
+    region: 'us-east-1'
+  });
+
+  lambda.invoke (
+    {
+      FunctionName: 'favi-dev-notifyPusherAll', // TODO: respect multiple envs
+      Payload: JSON.stringify ({
+        channel: channel
+      }),
+      InvocationType: 'Event'
+    },
+    function (error, data) {
+      if (error) {
+        console.log(error, error.stack);
+        context.fail(error);
+      }
+      
+      console.log(data);
+      
+      callback (null, {
+        statusCode: 202,
+        body: JSON.stringify ({
+          channel: channel
+        }),
+        headers: respHeaders,
+      });
+    }
+  );
 };

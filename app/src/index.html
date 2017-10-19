@@ -72,6 +72,29 @@
             height: 16px;
             margin: 0 10px;
         }
+
+        #stream-results {
+            margin: 0;
+            padding: 0;
+        }
+        #stream-results li {
+            float: left;
+            display: inline-block;
+            margin: 0;
+            padding: 0;
+        }
+        #stream-results li a {
+            display: inline-block;
+            margin: 0;
+            padding: 0;
+        }
+        #stream-results li a img {
+            display: inline-block;
+            margin: 0;
+            padding: 0;
+            width: 16px;
+            height: 16px;
+        }
     </style>
 </head>
 
@@ -91,6 +114,7 @@
             </form>
             <span id="error" style="display: none;"></span>
             <div id="loading" style="display: none;">Loading...</div>
+            <ul id="stream-results" style="display: none;"></ul>
             <ul id="results" style="display: none;"></ul>
             <div id="server-header" style="display: none;">Server Activity</div>
             <ul id="server-results" style="display: none;"></ul>
@@ -112,9 +136,10 @@
             <p>Open your browser's developer console to view serverside events</p>
             <p>This public-facing app has rate-limiting and throttling in place to prevent abuse.</p>
             <form id="seed">
-                <p>Enter API key for seeding DB:</p>
+                <p>Enter your secret API key:</p>
                 <input type="text" id="seed-key" />
                 <input type="submit" value="Seed" />
+                <button id="stream">Stream</button>
                 <span id="seed-error" style="display: none;"></span>
             </form>
         </div>
@@ -136,7 +161,20 @@
         // TODO: move to separate static asset
         var FAVI_API_KEY = 'hH3DeRvreM2naVt7ENinj2YTuXpS09ZY1q5smZk9';
 
+        function uuidv4() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
         $(document).ready(function () {
+            var uuid = localStorage.getItem("uuid");
+            if (!uuid) {
+                uuid = uuidv4();
+                localStorage.setItem("uuid", uuid);
+            }
+
             console.log("ready!");
 
             // Enable pusher logging - don't include this in production
@@ -177,6 +215,17 @@
                             $serverLi.html('<a href="' + newHost + '">' + newHost + '</a>: <img src="https://s2.googleusercontent.com/s2/favicons?domain=' + encodeURIComponent(newHost) + '" /><span>(scraping failed, falling back to google favicon service)</span>');
                         }
                     }
+                }
+            });
+
+            $streamItems = $("#stream-results");
+            var streamChannel = pusher.subscribe('stream-' + uuid);
+            streamChannel.bind('fave-event-stream', function (data) {
+                if (data.favicon_src && data.favicon_src.S) {
+                    var hostname = data.hostname.S;
+                    var faviconSrc = data.favicon_src.S == "null" ? 'https://s2.googleusercontent.com/s2/favicons?domain=' + encodeURIComponent(hostname) : data.favicon_src.S;
+                    
+                    $streamItems.show().prepend('<li data-hostname="' + hostname + '"><a title="'+hostname+'" href="' + hostname + '"><img src="' + faviconSrc + '" /></a></li>');
                 }
             });
 
@@ -295,6 +344,40 @@
                         console.log(errorThrown);
                         $('#seed-error').text('Request failed: ' + err.statusText).show();
                         $("#seed :input").prop("disabled", false);
+                    });
+            });
+
+            $("#stream").on('click', function (e) {
+                e.preventDefault();
+
+                var FAVI_SEED_KEY = $("#seed-key").val();
+
+                $.ajax({
+                    url: "https://favi-api.andrhamm.com/faves/stream",
+                    type: "POST",
+                    data: JSON.stringify({ channel: uuid }),
+                    dataType: 'json',
+                    contentType: "application/json; charset=utf-8",
+                    beforeSend: function (xhr, opts) {
+                        xhr.setRequestHeader("x-api-key", FAVI_SEED_KEY);
+                        $('#loading').show();
+                        $("#stream").prop("disabled", true);
+                    },
+                    complete: function (xhr, textStatus) {
+                        $('#loading').hide();
+                    },
+                    success: function (data, textStatus, jqXHR) {
+                        console.log("Stream request successful.");
+                        setTimeout(function () {
+                            $("#stream").prop("disabled", false);
+                        }, 300000);
+                    }
+                })
+                    .fail(function (jqXHR, textStatus, errorThrown) {
+                        console.log(jqXHR);
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                        $("#stream").prop("disabled", false);
                     });
             });
         });
