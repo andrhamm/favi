@@ -227,19 +227,37 @@ module.exports.seedFaves = function (event, context, callback) {
         context.fail (err);
       } else {
         cursor = parseInt (data.Body.toString ('utf-8')) || 1;
-        var endCursor = cursor + 1000;
+        var endCursor = cursor + 100;
 
         console.log ('seed cursor start=' + cursor + ' end=' + endCursor);
 
         var count = 0;
+        var errors = 0;
 
         var stream = s3.getObject (s3SeedFileParams).createReadStream ();
 
         var csv = require ('fast-csv');
 
-        var kinesis = new AWS.Kinesis ({apiVersion: '2013-12-02'});
+        var sns = new AWS.SNS ({apiVersion: '2010-03-31'});
 
-        var records = [];
+        var snsArn;
+        // TODO: would be nice to pass this ARN in a env var
+        // without hardcoding it... not sure if Serverless
+        // supports dynamically using CloudFormation functions
+        // for env vars...
+        sns.createTopic (
+          {
+            Name: 'FaveSeeds',
+          },
+          function (err, data) {
+            if (err) {
+              console.log (err, err.stack);
+              context.fail (err);
+            } else {
+              snsArn = data.TopicArn;
+            }
+          }
+        );
 
         var csvStream = csv
           .parse ()
@@ -254,51 +272,44 @@ module.exports.seedFaves = function (event, context, callback) {
             console.log (csvrow);
 
             var i = csvrow[0];
-            var record = {
-              Data: 'http://' + csvrow[1],
-              PartitionKey: '1',
+            var messageParams = {
+              TopicArn: snsArn,
+              Message: 'http://' + csvrow[1],
             };
 
-            records.push (record);
-
-            count += 1;
+            sns.publish (messageParams, function (err, data) {
+              if (err) {
+                console.log (err, err.stack);
+                errors += 1;
+              } else {
+                count += 1;
+              }
+            });
           })
           .on ('end', function () {
             console.log ('done parsing');
 
-            kinesis.putRecords (
-              {
-                Records: records,
-                StreamName: 'FaveSeeds',
-              },
-              function (err, data) {
-                if (err) {
-                  console.log (err, err.stack); // an error occurred
-                  context.fail (err);
-                } else {
-                  s3SeedCursorFileParams.Body = endCursor.toString ();
+            s3SeedCursorFileParams.Body = endCursor.toString ();
 
-                  s3.putObject (s3SeedCursorFileParams, function (err, data) {
-                    if (err) {
-                      console.log (err, err.stack); // an error occurred
-                      context.fail (err);
-                    } else {
-                      console.log ('saved cursor as ' + endCursor);
+            s3.putObject (s3SeedCursorFileParams, function (err, data) {
+              if (err) {
+                console.log (err, err.stack); // an error occurred
+                context.fail (err);
+              } else {
+                console.log ('saved cursor as ' + endCursor);
 
-                      callback (null, {
-                        statusCode: 202,
-                        body: JSON.stringify ({
-                          count: count,
-                          cursor_start: cursor,
-                          cursor_end: endCursor,
-                        }),
-                        headers: respHeaders,
-                      });
-                    }
-                  });
-                }
+                callback (null, {
+                  statusCode: 202,
+                  body: JSON.stringify ({
+                    errors: errors,
+                    count: count,
+                    cursor_start: cursor,
+                    cursor_end: endCursor,
+                  }),
+                  headers: respHeaders,
+                });
               }
-            );
+            });
           });
 
         stream.pipe (csvStream);
@@ -334,29 +345,29 @@ module.exports.streamFaves = function (event, context, callback) {
   }
 
   var lambda = new AWS.Lambda ({
-    region: 'us-east-1'
+    region: 'us-east-1',
   });
 
   lambda.invoke (
     {
       FunctionName: 'favi-dev-notifyPusherAll', // TODO: respect multiple envs
       Payload: JSON.stringify ({
-        channel: channel
+        channel: channel,
       }),
-      InvocationType: 'Event'
+      InvocationType: 'Event',
     },
     function (error, data) {
       if (error) {
-        console.log(error, error.stack);
-        context.fail(error);
+        console.log (error, error.stack);
+        context.fail (error);
       }
-      
-      console.log(data);
-      
+
+      console.log (data);
+
       callback (null, {
         statusCode: 202,
         body: JSON.stringify ({
-          channel: channel
+          channel: channel,
         }),
         headers: respHeaders,
       });

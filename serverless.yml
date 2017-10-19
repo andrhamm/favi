@@ -39,12 +39,8 @@ provider:
       Resource: arn:aws:s3:::favi-*/*
     - Effect: "Allow"
       Action:
-        - kinesis:DescribeStream
-        - kinesis:GetRecords
-        - kinesis:GetShardIterator
-        - kinesis:ListStreams
-        - kinesis:PutRecords
-      Resource: arn:aws:kinesis:*:*
+        - sns:*
+      Resource: "*"
     - Effect: Allow
       Action:
         - lambda:InvokeFunction
@@ -97,12 +93,7 @@ functions:
     description: Stream-event function to queue bulk hostnames for favicon scraping
     handler: handlers/seed.createFaveBatch
     events:
-      - stream:
-          type: kinesis
-          arn:
-            Fn::GetAtt:
-              - KinesisStreamFaveSeeds
-              - Arn
+      - sns: FaveSeeds
   seedFaves:
     description: HTTP-event function to queue a batch of hostnames for favicon scraping
     handler: handlers/handler.seedFaves
@@ -202,11 +193,10 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: favi-cache
-    KinesisStreamFaveSeeds:
-      Type: AWS::Kinesis::Stream
+    SNSTopicFaveSeeds:
+      Type: AWS::SNS::Topic
       Properties:
-        Name: FaveSeeds
-        ShardCount: 1
+        TopicName: FaveSeeds
     # KinesisTestMap:
     #   Type: AWS::Lambda::EventSourceMapping
     #   DependsOn : 
