@@ -100,6 +100,7 @@ functions:
     timeout: 60
     environment:
       FAVI_SEED_KEY: ${file(env.yml):FAVI_SEED_KEY}
+      SNS_TOPIC_ARN: { "Ref": "SNSTopicFaveSeeds" }
     events:
       - http:
           path: /seed
@@ -125,6 +126,8 @@ functions:
   scrapeDynamoToSns:
     description: Stream-event function to send dynamodb stream events to SNS
     handler: handlers/handler.scrapeDynamoToSns
+    environment:
+      SNS_TOPIC_ARN: { "Ref": "SNSTopicFaveScrapeJobs" }
     events:
        - stream:
           type: dynamodb
