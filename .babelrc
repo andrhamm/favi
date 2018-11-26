@@ -1,0 +1,18 @@
+{
+  "comments": false,
+  "presets": [
+    [
+      "env",
+      {
+        "targets": {
+          "node": "8.10"
+        }
+      }
+    ]
+  ],
+  "env": {
+    "development": {
+      "plugins": ["source-map-support", "transform-object-rest-spread"]
+    }
+  }
+}

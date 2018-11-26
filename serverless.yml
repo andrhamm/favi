@@ -2,7 +2,7 @@ service: favi
 
 provider:
   name: aws
-  runtime: nodejs6.10
+  runtime: nodejs8.10
   profile: tremorlab
   apiKeys:
     - favi-web-key
@@ -17,6 +17,8 @@ provider:
   environment:
     DEBUG: "*"
   iamRoleStatements:
+    # These will be inherited by all functions. see custom.serverless-iam-roles-per-function.defaultInherit
+    # TODO: move these to the per-function role configs
     - Effect: Allow
       Action:
         - dynamodb:DescribeTable
@@ -49,25 +51,31 @@ provider:
 
 plugins:
   - serverless-plugin-custom-domain
+  - serverless-iam-roles-per-function
+  - serverless-webpack
 
 custom:
   domain: "favi-api.andrhamm.com"
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
+    packager: yarn
+    packagerOptions:
+      scripts:
+        - rm -rf node_modules/aws-sdk
+        # - rm -rf node_modules/aws-xray-sdk*
+  serverless-iam-roles-per-function:
+    defaultInherit: true
 
 package:
+  individually: true
   exclude:
-    - app
-    - seed.rb
-    - '*.csv*'
-    - ruby
-    - vendor
-    - .bundle 
-    - '*.rb'
-    - 'Gemfile*'
+    - config.*.yaml
 
 functions:
   readFave:
     description: HTTP-event function to lookup favicon data by hostname
-    handler: handlers/handler.readFave
+    handler: handlers/readFave.handler
     events:
       - http:
           path: /faves
@@ -79,7 +87,7 @@ functions:
                 hostname: true
   createFave:
     description: HTTP-event function to queue a hostname for favicon scraping
-    handler: handlers/handler.createFave
+    handler: handlers/createFave.handler
     events:
       - http:
           path: /faves
@@ -91,12 +99,12 @@ functions:
           private: false
   createFaveBatch:
     description: Stream-event function to queue bulk hostnames for favicon scraping
-    handler: handlers/seed.createFaveBatch
+    handler: handlers/createFaveBatch.handler
     events:
       - sns: FaveSeeds
   seedFaves:
     description: HTTP-event function to queue a batch of hostnames for favicon scraping
-    handler: handlers/handler.seedFaves
+    handler: handlers/seedFaves.handler
     timeout: 60
     environment:
       FAVI_SEED_KEY: ${file(env.yml):FAVI_SEED_KEY}
@@ -112,7 +120,7 @@ functions:
           private: false
   streamFaves:
     description: HTTP-event function to queue a request to stream all faves to websocket
-    handler: handlers/handler.streamFaves
+    handler: handlers/streamFaves.handler
     timeout: 60
     events:
       - http:
@@ -125,7 +133,7 @@ functions:
           private: false
   scrapeDynamoToSns:
     description: Stream-event function to send dynamodb stream events to SNS
-    handler: handlers/handler.scrapeDynamoToSns
+    handler: handlers/scrapeDynamoToSns.handler
     environment:
       SNS_TOPIC_ARN: { "Ref": "SNSTopicFaveScrapeJobs" }
     events:
@@ -138,13 +146,13 @@ functions:
           batchSize: 25
   scrapeFavicon:
     description: Stream-event function to scrape favicons in a headlesss browser
-    handler: handlers/scrape.scrapeFavicon
+    handler: handlers/scrapeFavicon.handler
     timeout: 180
     events:
       - sns: FaveScrapeJobs
   cacheFavicon:
     description: Stream-event function to save copies of favicon images to S3
-    handler: handlers/cache.cacheFavicon
+    handler: handlers/cache.handler
     events:
        - stream:
           type: dynamodb
@@ -209,30 +217,3 @@ resources:
       Type: AWS::SNS::Topic
       Properties:
         TopicName: FaveScrapeJobs
-    # KinesisTestMap:
-    #   Type: AWS::Lambda::EventSourceMapping
-    #   DependsOn : 
-    #     - "CreateFaveBatchLambdaFunction"
-    #     - "IamPolicyLambdaExecution"
-    #   Properties:
-    #     BatchSize: 10
-    #     EventSourceArn:
-    #       Fn::GetAtt:
-    #         - "KinesisStreamFaveSeeds"
-    #         - "Arn"
-    #     FunctionName:
-    #       Fn::GetAtt:
-    #         - "CreateFaveBatchLambdaFunction"
-    #         - "Arn"
-    #     StartingPosition: "TRIM_HORIZON"
-    # CloudFrontDistributionFaviApp:
-    #   Type: AWS::CloudFront::Distribution
-    #   Properties:
-    #     DistributionConfig:
-    #       Aliases:
-    #         - favi.andrhamm.com
-    #       DefaultRootObject: index.html
-    #       Origins:
-    #         - DomainName: favi.andrhamm.com
-    #           Id: favi
-    #           S3OriginConfig:

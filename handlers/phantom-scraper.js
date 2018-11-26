@@ -1,3 +1,4 @@
+/* eslint-disable */
 var webPage = require ('webpage');
 var page = webPage.create ();
 var system = require ('system');
@@ -11,7 +12,7 @@ page.onError = function(msg, trace) {
   //         msgStack.push(' -> ' + t.file + ': ' + t.line + (t.function ? ' (in function "' + t.function + '")' : ''));
   //     });
   // }
-  // uncomment to log into the console 
+  // uncomment to log into the console
   // console.error(msgStack.join('\n'));
 };
 

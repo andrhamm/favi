@@ -1,12 +1,10 @@
-'use strict';
+import Pusher from 'pusher';
 
-const AWS = require ('aws-sdk');
+import {
+  dynamodb,
+} from '../lib/common';
 
-var dynamodb = new AWS.DynamoDB ({apiVersion: '2012-08-10'});
-
-var Pusher = require ('pusher');
-
-var pusher = new Pusher ({
+const pusher = new Pusher({
   appId: process.env.PUSHER_APP_ID,
   key: process.env.PUSHER_KEY,
   secret: process.env.PUSHER_SECRET,
@@ -14,49 +12,52 @@ var pusher = new Pusher ({
   encrypted: true,
 });
 
-module.exports.notifyPusher = (event, context, callback) => {
-  console.log ('cacheFavicon func');
-  console.log (event);
+export const notifyPusher = (event) => {
+  console.log('cacheFavicon func');
+  console.log(event);
 
-  var events = event.Records;
-  for (var i = 0, len = events.length; i < len; i++) {
-    var payload = {};
+  const events = event.Records;
+  // eslint-disable-next-line no-plusplus
+  for (let i = 0, len = events.length; i < len; i++) {
+    const payload = {};
     payload.type = events[i].eventName;
     payload.data = events[i].dynamodb;
 
-    pusher.trigger (
+    pusher.trigger(
       'faves',
       'fave-event', // 'fave-' + events[i].eventName.toLowerCase (),
-      payload
+      payload,
     );
   }
 };
 
-module.exports.notifyPusherAll = (event, context, callback) => {
-  console.log (event);
+export const notifyPusherAll = (event, context) => {
+  console.log(event);
 
-  var params = {
+  const params = {
     ProjectionExpression: 'hostname, favicon_src',
     TableName: 'FaveRecords',
   };
 
-  var channel = 'stream-' + event.channel;
+  const channel = `stream-${event.channel}`;
 
-  dynamodb.scan (params, function (err, data) {
+  dynamodb.scan(params, (err, data) => {
     if (err) {
-      console.log (err, err.stack);
-      context.fail (err);
+      console.log(err, err.stack);
+      context.fail(err);
     } else {
-      console.log (
-        'Streaming ' + data.Items.length + ' faves to Pusher channel ' + channel
+      console.log(
+        `Streaming ${data.Items.length} faves to Pusher channel ${channel}`,
       );
-      for (var index = 0; index < data.Items.length; index++) {
-        var element = data.Items[index];
+
+      // eslint-disable-next-line no-plusplus
+      for (let index = 0; index < data.Items.length; index++) {
+        const element = data.Items[index];
 
         if (element.favicon_src && element.favicon_src.S) {
-          console.log (element.hostname.S + ' (' + element.favicon_src.S + ')');
+          console.log(`${element.hostname.S} (${element.favicon_src.S})`);
 
-          pusher.trigger (channel, 'fave-event-stream', element);
+          pusher.trigger(channel, 'fave-event-stream', element);
         }
       }
     }

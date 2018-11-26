@@ -4,15 +4,34 @@
   "description": "Serverless favicon scraping service",
   "author": "Andrew Hammond",
   "license": "MIT",
+  "scripts": {
+    "preinstall": "node -e \"if(process.env.npm_execpath.indexOf('yarn') === -1) throw new Error('You must use Yarn to install, not NPM')\""
+  },
   "devDependencies": {
-    "serverless": "^1.23.0",
-    "serverless-plugin-custom-domain": "^2.0.0"
+    "@babel/cli": "^7.1.5",
+    "babel-core": "^6.26.3",
+    "babel-eslint": "^10.0.1",
+    "babel-loader": "^8.0.4",
+    "babel-plugin-source-map-support": "^2.0.1",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "eslint": "^5.9.0",
+    "eslint-config-airbnb": "^17.1.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-jsx-a11y": "^6.1.2",
+    "eslint-plugin-react": "^7.11.1",
+    "serverless": "^1.33.2",
+    "serverless-iam-roles-per-function": "^1.0.4",
+    "serverless-plugin-custom-domain": "^2.0.0",
+    "serverless-webpack": "^5.2.0",
+    "webpack": "^4.26.1",
+    "webpack-node-externals": "^1.7.2"
   },
   "dependencies": {
     "aws-sdk": "^2.133.0",
     "fast-csv": "^2.4.1",
     "phantomjs-lambda-pack": "^0.0.7",
-    "phantomjs-prebuilt": "^2.1.15",
-    "pusher": "^1.5.1"
+    "phantomjs-prebuilt": "^2.1.16",
+    "pusher": "^2.2.0"
   }
 }
